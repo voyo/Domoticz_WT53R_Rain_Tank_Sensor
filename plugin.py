@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-<plugin key="WT53RSensor" name="WT53R Rain Tank Sensor" Author: Wojtek Sawasciuk  <voyo@no-ip.pl>  version="1.0.0">
+<plugin key="WT53RSensor" name="WT53R Rain Tank Sensor" Author="Wojtek Sawasciuk <voyo@no-ip.pl>"  version="1.0.0">
     <description>
         <h2>WT53R Rain Tank Sensor Plugin</h2>
         <p>This plugin connects to a WT53R range sensor over Modbus TCP protocol 
