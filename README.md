@@ -61,6 +61,7 @@ The plugin supports an extended set of parameters through a JSON object:
   "averaging_window": 15,
   "outlier_threshold": 2.0,
   "lock_file_path": "/var/tmp/domoticz_modbus.lock",
+  "max_consecutive_errors": 10,
   "debug_logging": false
 }
 ```
@@ -77,6 +78,7 @@ The plugin supports an extended set of parameters through a JSON object:
 | averaging_window | Number of readings to keep for averaging | 15 |
 | outlier_threshold | Threshold in standard deviations for outlier detection | 2.0 |
 | lock_file_path | Path to Modbus lock file | None (auto) |
+| max_consecutive_errors | Maximum consecutive errors before applying exponential backoff | 10 |
 | debug_logging | Enable detailed debug logging | false |
 
 ## Created Devices
@@ -90,6 +92,17 @@ The plugin creates five devices in Domoticz:
 5. **Rain Tank Water Level** - Water height from bottom of tank (cm)
 
 ## Technical Details
+
+### Error Handling and Recovery
+
+The plugin implements robust error handling with automatic recovery:
+
+- **Exponential Backoff**: After consecutive errors, the plugin applies exponential backoff (2^n seconds, max 5 minutes) before retrying
+- **Automatic Reconnection**: After 3 consecutive errors, the Modbus client is recreated to handle stale connections
+- **No Permanent Lockout**: Unlike previous versions, the plugin never stops polling permanently - it will always retry with appropriate delays
+- **Detailed Logging**: All errors are logged with both consecutive and total error counts for better diagnostics
+
+This ensures the plugin recovers automatically from temporary network issues, device restarts, or connection timeouts without requiring manual intervention.
 
 ### Thread-Safe Modbus Communications
 

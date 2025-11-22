@@ -35,6 +35,7 @@
   "averaging_window": 15,
   "outlier_threshold": 2.0,
   "lock_file_path": "/var/tmp/domoticz_modbus.lock",
+  "max_consecutive_errors": 10,
   "debug_logging": false
 }</pre>
             </li>
@@ -114,8 +115,8 @@ class BasePlugin:
         self.sensor_data = None
         self.last_poll_time = 0
         self.error_count = 0
-        self.max_errors = 5
-        self.connection_retries = 0
+        self.consecutive_errors = 0
+        self.max_consecutive_errors = 10
 
         # Plugin configuration
         self.poll_interval = self.DEFAULT_POLL_INTERVAL
@@ -245,7 +246,7 @@ class BasePlugin:
                 self.lock_timeout = int(config_json.get("lock_timeout", 5))
                 self.debug_logging = bool(
                     config_json.get("debug_logging", False))
-                self.max_errors = int(config_json.get("max_errors", 5))
+                self.max_consecutive_errors = int(config_json.get("max_consecutive_errors", 10))
             except json.JSONDecodeError as e:
                 Domoticz.Error(f"Error parsing JSON configuration: {e}")
 
@@ -317,25 +318,28 @@ class BasePlugin:
         """Poll the WT53R sensor for data"""
         Domoticz.Debug("Polling WT53R sensor...")
 
-        # Check error count to prevent excessive retries
-        if self.error_count >= self.max_errors:
-            Domoticz.Error(
-                f"Too many consecutive errors ({self.error_count}). Skipping poll."
-            )
-            # Reset error count after time to prevent permanent lockout
-            if self.heartbeat_count % 30 == 0:  # Reset after ~30 heartbeats
-                self.error_count = 0
-            return
+        # Apply exponential backoff if there are consecutive errors
+        if self.consecutive_errors > 0:
+            backoff_time = min(2 ** self.consecutive_errors, 300)  # Max 5 minutes
+            if time.time() - self.last_poll_time < backoff_time:
+                Domoticz.Debug(f"Backing off for {backoff_time}s after {self.consecutive_errors} consecutive errors")
+                return
 
         # Attempt to acquire the Modbus lock
         with self.modbus_lock as lock_acquired:
             if not lock_acquired:
                 Domoticz.Error("Failed to acquire Modbus lock. Skipping poll.")
-                self.error_count += 1
+                self.consecutive_errors += 1
                 return
 
             # Connect to the sensor and get data
             try:
+                # Recreate Modbus client if too many consecutive errors (connection may be stale)
+                if self.consecutive_errors >= 3 and self.modbus_client:
+                    Domoticz.Log("Recreating Modbus client after consecutive errors")
+                    del self.modbus_client
+                    self.modbus_client = None
+
                 # Initialize Modbus client if needed
                 if not self.modbus_client:
                     self.modbus_client = ModbusClient(host=self.ip_address,
@@ -354,23 +358,18 @@ class BasePlugin:
                 else:
                     Domoticz.Debug(f"Failed to set measurement mode, continuing anyway")
 
-                # Read distance value - we'll make only one attempt now for simplicity
+                # Read distance value
                 registers = self.modbus_client.read_holding_registers(
                     self.DISTANCE_REGISTER, 1)
-                
+
                 if registers is None or len(registers) == 0:
-                    Domoticz.Error("Failed to read distance from sensor")
-                    self.error_count += 1
-                    return
+                    raise Exception("Failed to read distance from sensor - no data returned")
 
                 # Process the raw distance value
                 raw_distance = registers[0]
-                distance_cm = float(
-                    raw_distance) / 10  # Convert to cm if needed
+                distance_cm = float(raw_distance) / 10  # Convert to cm if needed
 
-                Domoticz.Debug(
-                    f"Raw distance: {raw_distance}, Distance in cm: {distance_cm}"
-                )
+                Domoticz.Debug(f"Raw distance: {raw_distance}, Distance in cm: {distance_cm}")
 
                 # Add to sensor data for averaging
                 self.sensor_data.add_data_point(distance_cm)
@@ -382,8 +381,8 @@ class BasePlugin:
 
                 # Use the updated calculate_fill_percentage method with max_water_level parameter
                 fill_percentage = self.sensor_data.calculate_fill_percentage(
-                    avg_distance, 
-                    self.tank_height, 
+                    avg_distance,
+                    self.tank_height,
                     self.sensor_offset,
                     self.max_water_level
                 )
@@ -403,7 +402,7 @@ class BasePlugin:
                 # Calculate volume - now returns (usable_volume_liters, volume_m3, total_volume_liters)
                 volume_result = self.sensor_data.calculate_volume(
                     avg_distance, tank_params)
-                
+
                 # Unpack the values - older versions of the function returned only two values
                 if len(volume_result) >= 3:
                     usable_volume_liters, volume_m3, total_volume_liters = volume_result
@@ -426,12 +425,20 @@ class BasePlugin:
                 self.update_devices(distance_cm, avg_distance, fill_percentage,
                                     display_volume)
 
-                # Reset error count on successful read
-                self.error_count = 0
+                # Reset consecutive errors on successful read
+                if self.consecutive_errors > 0:
+                    Domoticz.Log(f"Successfully recovered after {self.consecutive_errors} consecutive errors")
+                    self.consecutive_errors = 0
 
             except Exception as e:
-                Domoticz.Error(f"Error polling sensor: {e}")
+                self.consecutive_errors += 1
                 self.error_count += 1
+                Domoticz.Error(f"Error polling sensor (consecutive: {self.consecutive_errors}, total: {self.error_count}): {e}")
+
+                # Log warning if errors are piling up
+                if self.consecutive_errors >= self.max_consecutive_errors:
+                    Domoticz.Error(f"Warning: {self.consecutive_errors} consecutive errors. Will retry with exponential backoff.")
+                    # Don't stop polling - backoff will handle retry timing
 
     def update_devices(self, distance, avg_distance, fill_percentage,
                        volume_liters):
