@@ -464,8 +464,8 @@ class BasePlugin:
             UpdateDevice(self.UNIT_DISTANCE_AVG, 0, avg_distance, AlwaysUpdate=True)
             UpdateDevice(self.UNIT_FILL_PCT, 0, fill_percentage, AlwaysUpdate=True)
 
-            # Update Volume device with value in m³
-            UpdateDevice(self.UNIT_VOLUME, 0, volume_m3, AlwaysUpdate=True)
+            # Update Volume device with value in liters (Domoticz RFXMeter expects liters)
+            UpdateDevice(self.UNIT_VOLUME, 0, volume_liters, AlwaysUpdate=True)
 
             # Update Water Level device (from bottom of tank)
             UpdateDevice(self.UNIT_WATER_LEVEL, 0, water_level, AlwaysUpdate=True)
@@ -523,13 +523,13 @@ def UpdateDevice(Unit, nValue, sValue, TimedOut=0, AlwaysUpdate=False):
         
         # Format values based on device type
         formatted_sValue = ""
-        
-        # For Volume device
+
+        # For Volume device (Type=113 RFXMeter expects liters)
         if "Volume" in device_name:
-            # Pass the value in m³ with 3 decimal places
-            volume_m3 = float(sValue) if isinstance(sValue, (int, float)) else float(str(sValue))
-            formatted_sValue = f"{volume_m3:.3f}"
-            Domoticz.Debug(f"Volume in m³: {formatted_sValue}")
+            # Pass the value in liters with 1 decimal place
+            volume_liters = float(sValue) if isinstance(sValue, (int, float)) else float(str(sValue))
+            formatted_sValue = f"{volume_liters:.1f}"
+            Domoticz.Debug(f"Volume in liters: {formatted_sValue}L ({volume_liters/1000:.3f}m³)")
         else:
             # For all other devices, format numeric values with one decimal place
             if isinstance(sValue, (int, float)):
