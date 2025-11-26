@@ -459,15 +459,16 @@ class BasePlugin:
 
             # Use our UpdateDevice helper function which handles formatting
             # It automatically formats values based on device type and unit
-            UpdateDevice(self.UNIT_DISTANCE, 0, distance)
-            UpdateDevice(self.UNIT_DISTANCE_AVG, 0, avg_distance)
-            UpdateDevice(self.UNIT_FILL_PCT, 0, fill_percentage)
-            
+            # AlwaysUpdate=True ensures "Last Seen" timestamp is updated even if value doesn't change
+            UpdateDevice(self.UNIT_DISTANCE, 0, distance, AlwaysUpdate=True)
+            UpdateDevice(self.UNIT_DISTANCE_AVG, 0, avg_distance, AlwaysUpdate=True)
+            UpdateDevice(self.UNIT_FILL_PCT, 0, fill_percentage, AlwaysUpdate=True)
+
             # Update Volume device with value in m³
-            UpdateDevice(self.UNIT_VOLUME, 0, volume_m3)
-            
+            UpdateDevice(self.UNIT_VOLUME, 0, volume_m3, AlwaysUpdate=True)
+
             # Update Water Level device (from bottom of tank)
-            UpdateDevice(self.UNIT_WATER_LEVEL, 0, water_level)
+            UpdateDevice(self.UNIT_WATER_LEVEL, 0, water_level, AlwaysUpdate=True)
 
         except Exception as e:
             Domoticz.Error(f"Error updating devices: {e}")
