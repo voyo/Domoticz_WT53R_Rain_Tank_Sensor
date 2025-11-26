@@ -134,6 +134,16 @@ The `domoticz_scripts/` directory contains dzVents automation scripts that work 
   - Prevents rapid switching with configurable intervals
   - See [domoticz_scripts/README.md](domoticz_scripts/README.md) for installation and usage
 
+### Automation Devices
+
+The plugin **automatically creates** the following devices needed for the automation script:
+- `Woda szara` - Master selector switch (Deszczówka/Woda wodociągowa)
+- `zawór woda szara` - Valve selector switch (deszczówka/wodociąg)
+- `pompa woda deszczowa` - Rainwater pump On/Off switch
+- `Auto Mode Woda Szara` - Enable/disable automation
+
+These devices are **created but disabled by default** (Used=0). Enable them in Domoticz if you want to use the automation script. You still need to manually install the dzVents script - see [domoticz_scripts/README.md](domoticz_scripts/README.md).
+
 ## License
 
 This plugin is licensed under the Apache-2.0 License. See the LICENSE file for details.
