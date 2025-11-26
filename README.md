@@ -123,6 +123,17 @@ For very low water levels (below the minimum pump level), the plugin will:
 - Log the total non-pumpable volume in Domoticz logs for reference
 - Include both values in diagnostic outputs
 
+## Domoticz Scripts
+
+The `domoticz_scripts/` directory contains dzVents automation scripts that work with this plugin:
+
+- **`script_device_deszczowka_automatyka.lua`** - Rainwater Tank Automation
+  - Automatically switches between rainwater and tap water based on fill level
+  - Auto-corrects device mismatches (e.g., after Domoticz restart)
+  - Supports manual override with auto mode toggle
+  - Prevents rapid switching with configurable intervals
+  - See [domoticz_scripts/README.md](domoticz_scripts/README.md) for installation and usage
+
 ## License
 
 This plugin is licensed under the Apache-2.0 License. See the LICENSE file for details.
