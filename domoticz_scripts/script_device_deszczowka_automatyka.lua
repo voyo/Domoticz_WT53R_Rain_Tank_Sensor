@@ -79,9 +79,9 @@ end
 return {
     on = {
         devices = {
-            'Woda szara',
+            'RainTank - Woda szara',
             'RainTank - Fill Level',
-            'Auto Mode Woda Szara'
+            'RainTank - Auto Mode Woda Szara'
         },
         timer = {
             'every 10 minutes'
@@ -106,11 +106,11 @@ return {
         local DEBOUNCE_TIME = 5           -- Seconds to debounce device changes
 
         -- === DEVICE REFERENCES ===
-        local masterSwitch = domoticz.devices('Woda szara')
-        local valve = domoticz.devices('zawór woda szara')
-        local pump = domoticz.devices('pompa woda deszczowa')
+        local masterSwitch = domoticz.devices('RainTank - Woda szara')
+        local valve = domoticz.devices('RainTank - zawór woda szara')
+        local pump = domoticz.devices('RainTank - pompa woda deszczowa')
         local fillLevel = domoticz.devices('RainTank - Fill Level')
-        local autoMode = domoticz.devices('Auto Mode Woda Szara')
+        local autoMode = domoticz.devices('RainTank - Auto Mode Woda Szara')
 
         local currentTime = os.time()
         local currentLevel = fillLevel.percentage

@@ -32,15 +32,17 @@ This directory contains Domoticz dzVents automation scripts for use with the WT5
 
 #### Required Devices
 
-You must create these devices in Domoticz:
+The WT53R plugin automatically creates these devices (assuming hardware name is "RainTank"):
 
-| Device Name | Type | Description |
-|-------------|------|-------------|
-| `Woda szara` | Selector Switch | Master switch with levels: "Deszczówka", "Woda wodociągowa" |
-| `zawór woda szara` | Selector Switch | Valve switch with levels: "deszczówka", "wodociąg" |
-| `pompa woda deszczowa` | Switch | Rainwater pump (On/Off) |
+| Full Device Name in Domoticz | Type | Description |
+|------------------------------|------|-------------|
+| `RainTank - Woda szara` | Selector Switch | Master switch with levels: "Deszczówka", "Woda wodociągowa" |
+| `RainTank - zawór woda szara` | Selector Switch | Valve switch with levels: "deszczówka", "wodociąg" |
+| `RainTank - pompa woda deszczowa` | Switch | Rainwater pump (On/Off) |
 | `RainTank - Fill Level` | Percentage | Tank fill level from WT53R plugin (%) |
-| `Auto Mode Woda Szara` | Switch | Enable/disable automation |
+| `RainTank - Auto Mode Woda Szara` | Switch | Enable/disable automation |
+
+**Note:** If your hardware has a different name, update the device references in the script accordingly.
 
 #### Installation
 
