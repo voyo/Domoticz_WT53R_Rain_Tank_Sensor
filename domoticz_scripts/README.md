@@ -32,17 +32,92 @@ This directory contains Domoticz dzVents automation scripts for use with the WT5
 
 #### Required Devices
 
-The WT53R plugin automatically creates these devices (assuming hardware name is "RainTank"):
+**Devices created by WT53R plugin (automatic):**
 
-| Full Device Name in Domoticz | Type | Description |
-|------------------------------|------|-------------|
-| `RainTank - Woda szara` | Selector Switch | Master switch with levels: "Deszczówka", "Woda wodociągowa" |
-| `RainTank - zawór woda szara` | Selector Switch | Valve switch with levels: "deszczówka", "wodociąg" |
-| `RainTank - pompa woda deszczowa` | Switch | Rainwater pump (On/Off) |
-| `RainTank - Fill Level` | Percentage | Tank fill level from WT53R plugin (%) |
-| `RainTank - Auto Mode Woda Szara` | Switch | Enable/disable automation |
+| Device Name | Full Name in Domoticz | Description |
+|-------------|----------------------|-------------|
+| Fill Level | `RainTank - Fill Level` | Tank fill percentage from WT53R sensor |
+| Volume | `RainTank - Volume` | Water volume in liters/m³ |
+| Distance | `RainTank - Distance` | Raw distance measurement |
+| Distance Avg. | `RainTank - Distance Avg.` | Averaged distance |
+| Water Level | `RainTank - Water Level` | Water level from bottom |
 
-**Note:** If your hardware has a different name, update the device references in the script accordingly.
+**Devices you must create manually (Dummy devices with HTTP actions):**
+
+These devices need to be created as **Dummy** devices to support HTTP URL configuration for controlling physical hardware (GPIO, ESPEasy, etc.):
+
+| Device Name | Full Name | Type | HTTP Actions | Purpose |
+|-------------|-----------|------|--------------|---------|
+| RainTank - Woda szara | `RainTank - Woda szara` | Selector Switch | No | Master selector for visualization |
+| RainTank - zawór woda szara | `RainTank - zawór woda szara` | Selector Switch | **Yes** ✅ | Controls valve via HTTP/GPIO |
+| RainTank - pompa woda deszczowa | `RainTank - pompa woda deszczowa` | On/Off Switch | **Yes** ✅ | Controls pump via HTTP/GPIO |
+| RainTank - Auto Mode Woda Szara | `RainTank - Auto Mode Woda Szara` | On/Off Switch | No | Enable/disable automation |
+
+**Important:** Device names MUST match exactly (including "RainTank - " prefix) for the dzVents script to work!
+
+#### How to Create Dummy Devices
+
+**Step 1: Add Dummy Hardware** (if not already added)
+
+1. Go to **Setup → Hardware**
+2. Add new hardware:
+   - Name: `Dummy` (or any name)
+   - Type: `Dummy (Does nothing, use for virtual switches only)`
+3. Click **Add**
+
+**Step 2: Create Virtual Sensors**
+
+Click **Create Virtual Sensors** button in the Dummy hardware row, then create each device:
+
+**2.1 Master Selector Switch**
+- Name: `RainTank - Woda szara`
+- Sensor Type: `Switch → Selector`
+- Click **OK**
+- After creation, click **Edit** on the device:
+  - Actions: Leave empty (no HTTP needed)
+  - Selector Levels: Edit to have: `Woda wodociągowa` (level 0), `Deszczówka` (level 10)
+
+**2.2 Valve Selector Switch** (with HTTP actions)
+- Name: `RainTank - zawór woda szara`
+- Sensor Type: `Switch → Selector`
+- Click **OK**
+- After creation, click **Edit** on the device:
+  - **Set Point 0 (wodociąg):**
+    - Level: `0`, Name: `wodociąg`
+    - On URL: `http://YOUR_ESPEASY_IP/control?cmd=GPIO,12,0` (example - set valve to tap water)
+  - **Set Point 10 (deszczówka):**
+    - Level: `10`, Name: `deszczówka`
+    - On URL: `http://YOUR_ESPEASY_IP/control?cmd=GPIO,12,1` (example - set valve to rainwater)
+
+**2.3 Pump Switch** (with HTTP actions)
+- Name: `RainTank - pompa woda deszczowa`
+- Sensor Type: `Switch → Switch`
+- Click **OK**
+- After creation, click **Edit** on the device:
+  - On Action: `http://YOUR_ESPEASY_IP/control?cmd=GPIO,13,1` (example - turn pump on)
+  - Off Action: `http://YOUR_ESPEASY_IP/control?cmd=GPIO,13,0` (example - turn pump off)
+
+**2.4 Auto Mode Switch**
+- Name: `RainTank - Auto Mode Woda Szara`
+- Sensor Type: `Switch → Switch`
+- Click **OK**
+- After creation, click **Edit** on the device:
+  - Actions: Leave empty (no HTTP needed)
+
+**Step 3: Verify Device Names**
+
+Go to **Devices** and verify that all device names match exactly:
+- `RainTank - Fill Level` (from plugin)
+- `RainTank - Woda szara` (Dummy)
+- `RainTank - zawór woda szara` (Dummy)
+- `RainTank - pompa woda deszczowa` (Dummy)
+- `RainTank - Auto Mode Woda Szara` (Dummy)
+
+**Notes:**
+- Replace `YOUR_ESPEASY_IP` with your actual ESPEasy device IP
+- Replace GPIO numbers (12, 13) with your actual GPIO pins
+- You can use any HTTP control system: ESPEasy, Tasmota, Shelly, etc.
+- Test HTTP URLs manually first before configuring automation
 
 #### Installation
 

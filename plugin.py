@@ -13,26 +13,19 @@
             <li>Determines tank fill percentage and water volume</li>
             <li>Handles maximum water level due to overflow outlets</li>
             <li>Uses thread-safe Modbus communication</li>
-            <li>Creates automation devices for dzVents scripts (optional)</li>
         </ul>
         <h3>Devices Created</h3>
-        <p><b>Sensor Devices (always created):</b></p>
+        <p>The plugin creates the following sensor devices:</p>
         <ul style="list-style-type:square">
             <li>Distance - Raw distance measurement</li>
             <li>Distance Avg. - Averaged distance with outlier rejection</li>
-            <li>Fill Level - Tank fill percentage</li>
+            <li>Fill Level - Tank fill percentage (used by automation script)</li>
             <li>Volume - Water volume in liters/m³</li>
             <li>Water Level - Water level from bottom in cm</li>
         </ul>
         <p>Note: Full device names in Domoticz will be "HardwareName - DeviceName"</p>
-        <p><b>Automation Devices (created but disabled by default):</b></p>
-        <ul style="list-style-type:square">
-            <li>Woda szara - Master selector switch (for dzVents script)</li>
-            <li>zawór woda szara - Valve selector switch (for dzVents script)</li>
-            <li>pompa woda deszczowa - Pump On/Off switch (for dzVents script)</li>
-            <li>Auto Mode Woda Szara - Enable/disable automation (for dzVents script)</li>
-        </ul>
-        <p>See <code>domoticz_scripts/README.md</code> for automation script installation.</p>
+        <p><b>For automation:</b> See <code>domoticz_scripts/README.md</code> for instructions on creating
+        Dummy devices for automation control (valve, pump, etc.) with HTTP actions support.</p>
         <h3>Configuration</h3>
         <ul style="list-style-type:square">
             <li>Address - IP address of RS485-to-TCP adapter</li>
@@ -118,12 +111,6 @@ class BasePlugin:
     UNIT_FILL_PCT = 3       # Tank fill percentage
     UNIT_VOLUME = 4         # Tank water volume (in liters/m³)
     UNIT_WATER_LEVEL = 5    # Water level from bottom of tank (in cm)
-
-    # Device Units - Automation Devices (for dzVents script)
-    UNIT_AUTO_MASTER = 6    # Master switch (Deszczówka/Woda wodociągowa)
-    UNIT_AUTO_VALVE = 7     # Valve selector (deszczówka/wodociąg)
-    UNIT_AUTO_PUMP = 8      # Rainwater pump (On/Off)
-    UNIT_AUTO_MODE = 9      # Auto mode enable/disable
 
     # Sensor Modes
     MODE_SHORT = 1  # Short range (up to 150cm)
@@ -223,43 +210,6 @@ class BasePlugin:
             Domoticz.Debug("Heartbeat: Time to poll sensor")
             self.poll_sensor()
             self.last_poll_time = time.time()
-
-    def onCommand(self, Unit, Command, Level, Hue):
-        """Called when a user command is received from Domoticz"""
-        Domoticz.Log(f"onCommand called for Unit {Unit}: Command='{Command}', Level={Level}")
-
-        # Handle automation device commands
-        if Unit == self.UNIT_AUTO_MASTER:
-            # Master selector switch: Level 0 = Woda wodociągowa, Level 10 = Deszczówka
-            Domoticz.Log(f"Master switch command: Level={Level}")
-            nValue = 2 if Level > 0 else 0  # Selector nValue: 0=Off, 2=On
-            UpdateDevice(Unit, nValue, str(Level), AlwaysUpdate=True)
-
-        elif Unit == self.UNIT_AUTO_VALVE:
-            # Valve selector switch: Level 0 = wodociąg, Level 10 = deszczówka
-            Domoticz.Log(f"Valve selector command: Level={Level}")
-            nValue = 2 if Level > 0 else 0  # Selector nValue: 0=Off, 2=On
-            UpdateDevice(Unit, nValue, str(Level), AlwaysUpdate=True)
-
-        elif Unit == self.UNIT_AUTO_PUMP:
-            # Pump switch
-            if Command == "On":
-                Domoticz.Log("Pump turned On")
-                UpdateDevice(Unit, 1, "On", AlwaysUpdate=True)
-            else:
-                Domoticz.Log("Pump turned Off")
-                UpdateDevice(Unit, 0, "Off", AlwaysUpdate=True)
-
-        elif Unit == self.UNIT_AUTO_MODE:
-            # Auto mode switch
-            if Command == "On":
-                Domoticz.Log("Auto mode enabled")
-                UpdateDevice(Unit, 1, "On", AlwaysUpdate=True)
-            else:
-                Domoticz.Log("Auto mode disabled")
-                UpdateDevice(Unit, 0, "Off", AlwaysUpdate=True)
-        else:
-            Domoticz.Log(f"Unknown device command for Unit {Unit}", Domoticz.LOG_WARNING)
 
     def load_configuration(self):
         """Load plugin configuration from Parameters"""
@@ -374,74 +324,6 @@ class BasePlugin:
                 Description="Water level from bottom of tank in cm").Create()
 
             Domoticz.Log(f"Created Water Level device")
-
-        # === AUTOMATION DEVICES ===
-        # These devices are used by the dzVents automation script
-        # (domoticz_scripts/script_device_deszczowka_automatyka.lua)
-
-        # Master switch - Main control selector
-        if self.UNIT_AUTO_MASTER not in Devices:
-            Domoticz.Device(
-                Name="Woda szara",
-                Unit=self.UNIT_AUTO_MASTER,
-                Type=244,  # Switch
-                Subtype=62,  # Selector Switch
-                Switchtype=18,  # Selector
-                Options={
-                    "LevelActions": "|",
-                    "LevelNames": "Woda wodociągowa|Deszczówka",
-                    "LevelOffHidden": "true",
-                    "SelectorStyle": "0"
-                },
-                Used=0,  # Not used by default
-                Description="Master switch for rainwater automation (for dzVents script)").Create()
-
-            Domoticz.Log("Created automation device: Woda szara (Master Switch)")
-
-        # Valve selector
-        if self.UNIT_AUTO_VALVE not in Devices:
-            Domoticz.Device(
-                Name="zawór woda szara",
-                Unit=self.UNIT_AUTO_VALVE,
-                Type=244,  # Switch
-                Subtype=62,  # Selector Switch
-                Switchtype=18,  # Selector
-                Options={
-                    "LevelActions": "|",
-                    "LevelNames": "wodociąg|deszczówka",
-                    "LevelOffHidden": "true",
-                    "SelectorStyle": "0"
-                },
-                Used=0,  # Not used by default
-                Description="Valve selector for rainwater automation (for dzVents script)").Create()
-
-            Domoticz.Log("Created automation device: zawór woda szara (Valve Selector)")
-
-        # Pump switch
-        if self.UNIT_AUTO_PUMP not in Devices:
-            Domoticz.Device(
-                Name="pompa woda deszczowa",
-                Unit=self.UNIT_AUTO_PUMP,
-                Type=244,  # Switch
-                Subtype=73,  # Switch
-                Switchtype=0,  # On/Off
-                Used=0,  # Not used by default
-                Description="Rainwater pump switch (for dzVents script)").Create()
-
-            Domoticz.Log("Created automation device: pompa woda deszczowa (Pump Switch)")
-
-        # Auto mode switch
-        if self.UNIT_AUTO_MODE not in Devices:
-            Domoticz.Device(
-                Name="Auto Mode Woda Szara",
-                Unit=self.UNIT_AUTO_MODE,
-                Type=244,  # Switch
-                Subtype=73,  # Switch
-                Switchtype=0,  # On/Off
-                Used=0,  # Not used by default
-                Description="Enable/disable automatic switching (for dzVents script)").Create()
-
-            Domoticz.Log("Created automation device: Auto Mode Woda Szara (Auto Mode Switch)")
 
     def poll_sensor(self):
         """Poll the WT53R sensor for data"""
@@ -621,11 +503,6 @@ def onStop():
 def onHeartbeat():
     global _plugin
     _plugin.onHeartbeat()
-
-
-def onCommand(Unit, Command, Level, Hue):
-    global _plugin
-    _plugin.onCommand(Unit, Command, Level, Hue)
 
 
 # Generic helper functions

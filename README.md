@@ -132,17 +132,21 @@ The `domoticz_scripts/` directory contains dzVents automation scripts that work 
   - Auto-corrects device mismatches (e.g., after Domoticz restart)
   - Supports manual override with auto mode toggle
   - Prevents rapid switching with configurable intervals
-  - See [domoticz_scripts/README.md](domoticz_scripts/README.md) for installation and usage
+  - See [domoticz_scripts/README.md](domoticz_scripts/README.md) for complete installation guide
 
 ### Automation Devices
 
-The plugin **automatically creates** the following devices needed for the automation script:
-- `Woda szara` - Master selector switch (Deszczówka/Woda wodociągowa)
-- `zawór woda szara` - Valve selector switch (deszczówka/wodociąg)
-- `pompa woda deszczowa` - Rainwater pump On/Off switch
-- `Auto Mode Woda Szara` - Enable/disable automation
+The plugin **creates only sensor devices** (Distance, Fill Level, Volume, etc.).
 
-These devices are **created but disabled by default** (Used=0). Enable them in Domoticz if you want to use the automation script. You still need to manually install the dzVents script - see [domoticz_scripts/README.md](domoticz_scripts/README.md).
+For automation, you must **manually create Dummy devices** with HTTP actions support:
+- `RainTank - Woda szara` - Master selector switch (for visualization)
+- `RainTank - zawór woda szara` - Valve selector (with HTTP/GPIO control)
+- `RainTank - pompa woda deszczowa` - Pump switch (with HTTP/GPIO control)
+- `RainTank - Auto Mode Woda Szara` - Enable/disable automation
+
+**Why Dummy devices?** Plugin-created devices cannot have HTTP actions configured (needed for controlling physical valves/pumps via ESPEasy, Tasmota, GPIO, etc.). Dummy devices provide full HTTP URL configuration support.
+
+**Step-by-step guide:** See [domoticz_scripts/README.md](domoticz_scripts/README.md) for detailed instructions on creating these devices with HTTP actions.
 
 ## License
 
