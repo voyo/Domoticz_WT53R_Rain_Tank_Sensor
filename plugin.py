@@ -230,14 +230,16 @@ class BasePlugin:
 
         # Handle automation device commands
         if Unit == self.UNIT_AUTO_MASTER:
-            # Master selector switch
+            # Master selector switch: Level 0 = Woda wodociągowa, Level 10 = Deszczówka
             Domoticz.Log(f"Master switch command: Level={Level}")
-            UpdateDevice(Unit, 1, str(Level))
+            nValue = 2 if Level > 0 else 0  # Selector nValue: 0=Off, 2=On
+            UpdateDevice(Unit, nValue, str(Level))
 
         elif Unit == self.UNIT_AUTO_VALVE:
-            # Valve selector switch
+            # Valve selector switch: Level 0 = wodociąg, Level 10 = deszczówka
             Domoticz.Log(f"Valve selector command: Level={Level}")
-            UpdateDevice(Unit, 1, str(Level))
+            nValue = 2 if Level > 0 else 0  # Selector nValue: 0=Off, 2=On
+            UpdateDevice(Unit, nValue, str(Level))
 
         elif Unit == self.UNIT_AUTO_PUMP:
             # Pump switch
