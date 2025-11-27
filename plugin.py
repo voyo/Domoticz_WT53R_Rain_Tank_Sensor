@@ -223,6 +223,41 @@ class BasePlugin:
             self.poll_sensor()
             self.last_poll_time = time.time()
 
+    def onCommand(self, Unit, Command, Level, Hue):
+        """Called when a user command is received from Domoticz"""
+        Domoticz.Log(f"onCommand called for Unit {Unit}: Command='{Command}', Level={Level}")
+
+        # Handle automation device commands
+        if Unit == self.UNIT_AUTO_MASTER:
+            # Master selector switch
+            Domoticz.Log(f"Master switch command: Level={Level}")
+            UpdateDevice(Unit, 1, str(Level))
+
+        elif Unit == self.UNIT_AUTO_VALVE:
+            # Valve selector switch
+            Domoticz.Log(f"Valve selector command: Level={Level}")
+            UpdateDevice(Unit, 1, str(Level))
+
+        elif Unit == self.UNIT_AUTO_PUMP:
+            # Pump switch
+            if Command == "On":
+                Domoticz.Log("Pump turned On")
+                UpdateDevice(Unit, 1, "On")
+            else:
+                Domoticz.Log("Pump turned Off")
+                UpdateDevice(Unit, 0, "Off")
+
+        elif Unit == self.UNIT_AUTO_MODE:
+            # Auto mode switch
+            if Command == "On":
+                Domoticz.Log("Auto mode enabled")
+                UpdateDevice(Unit, 1, "On")
+            else:
+                Domoticz.Log("Auto mode disabled")
+                UpdateDevice(Unit, 0, "Off")
+        else:
+            Domoticz.Log(f"Unknown device command for Unit {Unit}", Domoticz.LOG_WARNING)
+
     def load_configuration(self):
         """Load plugin configuration from Parameters"""
         # Fetch parameters with defaults if not found
@@ -583,6 +618,11 @@ def onStop():
 def onHeartbeat():
     global _plugin
     _plugin.onHeartbeat()
+
+
+def onCommand(Unit, Command, Level, Hue):
+    global _plugin
+    _plugin.onCommand(Unit, Command, Level, Hue)
 
 
 # Generic helper functions
