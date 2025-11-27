@@ -233,31 +233,31 @@ class BasePlugin:
             # Master selector switch: Level 0 = Woda wodociągowa, Level 10 = Deszczówka
             Domoticz.Log(f"Master switch command: Level={Level}")
             nValue = 2 if Level > 0 else 0  # Selector nValue: 0=Off, 2=On
-            UpdateDevice(Unit, nValue, str(Level))
+            UpdateDevice(Unit, nValue, str(Level), AlwaysUpdate=True)
 
         elif Unit == self.UNIT_AUTO_VALVE:
             # Valve selector switch: Level 0 = wodociąg, Level 10 = deszczówka
             Domoticz.Log(f"Valve selector command: Level={Level}")
             nValue = 2 if Level > 0 else 0  # Selector nValue: 0=Off, 2=On
-            UpdateDevice(Unit, nValue, str(Level))
+            UpdateDevice(Unit, nValue, str(Level), AlwaysUpdate=True)
 
         elif Unit == self.UNIT_AUTO_PUMP:
             # Pump switch
             if Command == "On":
                 Domoticz.Log("Pump turned On")
-                UpdateDevice(Unit, 1, "On")
+                UpdateDevice(Unit, 1, "On", AlwaysUpdate=True)
             else:
                 Domoticz.Log("Pump turned Off")
-                UpdateDevice(Unit, 0, "Off")
+                UpdateDevice(Unit, 0, "Off", AlwaysUpdate=True)
 
         elif Unit == self.UNIT_AUTO_MODE:
             # Auto mode switch
             if Command == "On":
                 Domoticz.Log("Auto mode enabled")
-                UpdateDevice(Unit, 1, "On")
+                UpdateDevice(Unit, 1, "On", AlwaysUpdate=True)
             else:
                 Domoticz.Log("Auto mode disabled")
-                UpdateDevice(Unit, 0, "Off")
+                UpdateDevice(Unit, 0, "Off", AlwaysUpdate=True)
         else:
             Domoticz.Log(f"Unknown device command for Unit {Unit}", Domoticz.LOG_WARNING)
 
