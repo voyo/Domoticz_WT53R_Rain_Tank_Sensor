@@ -18,12 +18,13 @@
         <h3>Devices Created</h3>
         <p><b>Sensor Devices (always created):</b></p>
         <ul style="list-style-type:square">
-            <li>Rain Tank Distance - Raw distance measurement</li>
-            <li>Rain Tank Distance Average - Averaged distance with outlier rejection</li>
-            <li>Rain Tank Fill Level - Tank fill percentage</li>
-            <li>Rain Tank Volume - Water volume in liters/m³</li>
-            <li>Rain Tank Water Level - Water level from bottom in cm</li>
+            <li>Distance - Raw distance measurement</li>
+            <li>Distance Avg. - Averaged distance with outlier rejection</li>
+            <li>Fill Level - Tank fill percentage</li>
+            <li>Volume - Water volume in liters/m³</li>
+            <li>Water Level - Water level from bottom in cm</li>
         </ul>
+        <p>Note: Full device names in Domoticz will be "HardwareName - DeviceName"</p>
         <p><b>Automation Devices (created but disabled by default):</b></p>
         <ul style="list-style-type:square">
             <li>Woda szara - Master selector switch (for dzVents script)</li>
@@ -327,7 +328,7 @@ class BasePlugin:
         # Distance sensor (raw readings)
         if self.UNIT_DISTANCE not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Distance",
+                Name="Distance",
                 Unit=self.UNIT_DISTANCE,
                 TypeName="Distance",  # Using TypeName for better compatibility
                 Used=1).Create()
@@ -335,7 +336,7 @@ class BasePlugin:
         # Average distance sensor
         if self.UNIT_DISTANCE_AVG not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Distance Average",
+                Name="Distance Avg.",
                 Unit=self.UNIT_DISTANCE_AVG,
                 TypeName="Distance",  # Using TypeName for better compatibility
                 Used=1).Create()
@@ -343,7 +344,7 @@ class BasePlugin:
         # Fill percentage
         if self.UNIT_FILL_PCT not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Fill Level",
+                Name="Fill Level",
                 Unit=self.UNIT_FILL_PCT,
                 TypeName="Percentage",  # Using TypeName for better compatibility
                 Used=1).Create()
@@ -351,26 +352,26 @@ class BasePlugin:
         # Volume - changed to Type=113, Subtype=0 as requested
         if self.UNIT_VOLUME not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Volume", 
+                Name="Volume",
                 Unit=self.UNIT_VOLUME,
                 Type=113,  # Water (General) device
                 Subtype=0,  # Custom sensor
                 Switchtype=2,  # Counter
                 Used=1,
                 Description="Tank water volume in m³").Create()
-            
-            Domoticz.Log(f"Created Rain Tank Volume device")
-            
+
+            Domoticz.Log(f"Created Volume device")
+
         # Water level (from bottom) - actual water height
         if self.UNIT_WATER_LEVEL not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Water Level",
+                Name="Water Level",
                 Unit=self.UNIT_WATER_LEVEL,
                 TypeName="Distance",
                 Used=1,
                 Description="Water level from bottom of tank in cm").Create()
 
-            Domoticz.Log(f"Created Rain Tank Water Level device")
+            Domoticz.Log(f"Created Water Level device")
 
         # === AUTOMATION DEVICES ===
         # These devices are used by the dzVents automation script
