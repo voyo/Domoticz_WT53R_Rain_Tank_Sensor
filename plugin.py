@@ -86,14 +86,11 @@ from sensor_utils import SensorData
 # Ensure pyModbusTCP is available
 try:
     from pyModbusTCP.client import ModbusClient
-    from pymodbus.constants import Endian
-    from pymodbus.payload import BinaryPayloadDecoder
-    from pymodbus.payload import BinaryPayloadBuilder
     MODBUS_AVAILABLE = True
 except ImportError:
     MODBUS_AVAILABLE = False
     Domoticz.Error(
-        "pyModbusTCP is required. Install it using 'pip3 install pyModbusTCP pymodbus'"
+        "pyModbusTCP is required. Install it using 'pip3 install pyModbusTCP'"
     )
 
 
@@ -127,6 +124,7 @@ class BasePlugin:
         self.last_poll_time = 0
         self.error_count = 0
         self.max_errors = 5
+        self.error_cooldown_start = 0
         self.connection_retries = 0
 
         # Plugin configuration
@@ -331,13 +329,16 @@ class BasePlugin:
 
         # Check error count to prevent excessive retries
         if self.error_count >= self.max_errors:
-            Domoticz.Error(
-                f"Too many consecutive errors ({self.error_count}). Skipping poll."
-            )
-            # Reset error count after time to prevent permanent lockout
-            if self.heartbeat_count % 30 == 0:  # Reset after ~30 heartbeats
+            if time.time() - self.error_cooldown_start >= 300:  # retry after 5 minutes
+                Domoticz.Log(f"Error cooldown expired, retrying sensor poll...")
                 self.error_count = 0
-            return
+                self.error_cooldown_start = 0
+            else:
+                Domoticz.Error(
+                    f"Too many consecutive errors ({self.error_count}). Next retry in "
+                    f"{int(300 - (time.time() - self.error_cooldown_start))}s."
+                )
+                return
 
         # Attempt to acquire the Modbus lock
         with self.modbus_lock as lock_acquired:
@@ -372,7 +373,10 @@ class BasePlugin:
                 
                 if registers is None or len(registers) == 0:
                     Domoticz.Error("Failed to read distance from sensor")
+                    self.modbus_client = None  # force reconnect on next poll
                     self.error_count += 1
+                    if self.error_count >= self.max_errors and self.error_cooldown_start == 0:
+                        self.error_cooldown_start = time.time()
                     return
 
                 # Process the raw distance value
@@ -437,12 +441,16 @@ class BasePlugin:
                 self.update_devices(distance_cm, avg_distance, fill_percentage,
                                     display_volume)
 
-                # Reset error count on successful read
+                # Reset error state on successful read
                 self.error_count = 0
+                self.error_cooldown_start = 0
 
             except Exception as e:
                 Domoticz.Error(f"Error polling sensor: {e}")
+                self.modbus_client = None  # force reconnect on next poll
                 self.error_count += 1
+                if self.error_count >= self.max_errors and self.error_cooldown_start == 0:
+                    self.error_cooldown_start = time.time()
 
     def update_devices(self, distance, avg_distance, fill_percentage,
                        volume_liters):
