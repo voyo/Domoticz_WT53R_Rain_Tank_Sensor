@@ -14,6 +14,18 @@
             <li>Handles maximum water level due to overflow outlets</li>
             <li>Uses thread-safe Modbus communication</li>
         </ul>
+        <h3>Devices Created</h3>
+        <p>The plugin creates the following sensor devices:</p>
+        <ul style="list-style-type:square">
+            <li>Distance - Raw distance measurement</li>
+            <li>Distance Avg. - Averaged distance with outlier rejection</li>
+            <li>Fill Level - Tank fill percentage (used by automation script)</li>
+            <li>Volume - Water volume in liters/m³</li>
+            <li>Water Level - Water level from bottom in cm</li>
+        </ul>
+        <p>Note: Full device names in Domoticz will be "HardwareName - DeviceName"</p>
+        <p><b>For automation:</b> See <code>domoticz_scripts/README.md</code> for instructions on creating
+        Dummy devices for automation control (valve, pump, etc.) with HTTP actions support.</p>
         <h3>Configuration</h3>
         <ul style="list-style-type:square">
             <li>Address - IP address of RS485-to-TCP adapter</li>
@@ -93,7 +105,7 @@ class BasePlugin:
     SENSOR_MODE_REGISTER = 0x36
     DISTANCE_REGISTER = 0x34
 
-    # Device Units
+    # Device Units - Sensor Devices
     UNIT_DISTANCE = 1       # Raw distance measurement
     UNIT_DISTANCE_AVG = 2   # Averaged distance measurement (outliers removed)
     UNIT_FILL_PCT = 3       # Tank fill percentage
@@ -268,7 +280,7 @@ class BasePlugin:
         # Distance sensor (raw readings)
         if self.UNIT_DISTANCE not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Distance",
+                Name="Distance",
                 Unit=self.UNIT_DISTANCE,
                 TypeName="Distance",  # Using TypeName for better compatibility
                 Used=1).Create()
@@ -276,7 +288,7 @@ class BasePlugin:
         # Average distance sensor
         if self.UNIT_DISTANCE_AVG not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Distance Average",
+                Name="Distance Avg.",
                 Unit=self.UNIT_DISTANCE_AVG,
                 TypeName="Distance",  # Using TypeName for better compatibility
                 Used=1).Create()
@@ -284,7 +296,7 @@ class BasePlugin:
         # Fill percentage
         if self.UNIT_FILL_PCT not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Fill Level",
+                Name="Fill Level",
                 Unit=self.UNIT_FILL_PCT,
                 TypeName="Percentage",  # Using TypeName for better compatibility
                 Used=1).Create()
@@ -292,26 +304,26 @@ class BasePlugin:
         # Volume - changed to Type=113, Subtype=0 as requested
         if self.UNIT_VOLUME not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Volume", 
+                Name="Volume",
                 Unit=self.UNIT_VOLUME,
                 Type=113,  # Water (General) device
                 Subtype=0,  # Custom sensor
                 Switchtype=2,  # Counter
                 Used=1,
                 Description="Tank water volume in m³").Create()
-            
-            Domoticz.Log(f"Created Rain Tank Volume device")
-            
+
+            Domoticz.Log(f"Created Volume device")
+
         # Water level (from bottom) - actual water height
         if self.UNIT_WATER_LEVEL not in Devices:
             Domoticz.Device(
-                Name="Rain Tank Water Level", 
+                Name="Water Level",
                 Unit=self.UNIT_WATER_LEVEL,
                 TypeName="Distance",
                 Used=1,
                 Description="Water level from bottom of tank in cm").Create()
-            
-            Domoticz.Log(f"Created Rain Tank Water Level device")
+
+            Domoticz.Log(f"Created Water Level device")
 
     def poll_sensor(self):
         """Poll the WT53R sensor for data"""
@@ -458,15 +470,16 @@ class BasePlugin:
 
             # Use our UpdateDevice helper function which handles formatting
             # It automatically formats values based on device type and unit
-            UpdateDevice(self.UNIT_DISTANCE, 0, distance)
-            UpdateDevice(self.UNIT_DISTANCE_AVG, 0, avg_distance)
-            UpdateDevice(self.UNIT_FILL_PCT, 0, fill_percentage)
-            
-            # Update Volume device with value in m³
-            UpdateDevice(self.UNIT_VOLUME, 0, volume_m3)
-            
+            # AlwaysUpdate=True ensures "Last Seen" timestamp is updated even if value doesn't change
+            UpdateDevice(self.UNIT_DISTANCE, 0, distance, AlwaysUpdate=True)
+            UpdateDevice(self.UNIT_DISTANCE_AVG, 0, avg_distance, AlwaysUpdate=True)
+            UpdateDevice(self.UNIT_FILL_PCT, 0, fill_percentage, AlwaysUpdate=True)
+
+            # Update Volume device with value in liters (Domoticz RFXMeter expects liters)
+            UpdateDevice(self.UNIT_VOLUME, 0, volume_liters, AlwaysUpdate=True)
+
             # Update Water Level device (from bottom of tank)
-            UpdateDevice(self.UNIT_WATER_LEVEL, 0, water_level)
+            UpdateDevice(self.UNIT_WATER_LEVEL, 0, water_level, AlwaysUpdate=True)
 
         except Exception as e:
             Domoticz.Error(f"Error updating devices: {e}")
@@ -521,13 +534,13 @@ def UpdateDevice(Unit, nValue, sValue, TimedOut=0, AlwaysUpdate=False):
         
         # Format values based on device type
         formatted_sValue = ""
-        
-        # For Volume device
+
+        # For Volume device (Type=113 RFXMeter expects liters)
         if "Volume" in device_name:
-            # Pass the value in m³ with 3 decimal places
-            volume_m3 = float(sValue) if isinstance(sValue, (int, float)) else float(str(sValue))
-            formatted_sValue = f"{volume_m3:.3f}"
-            Domoticz.Debug(f"Volume in m³: {formatted_sValue}")
+            # Pass the value in liters with 1 decimal place
+            volume_liters = float(sValue) if isinstance(sValue, (int, float)) else float(str(sValue))
+            formatted_sValue = f"{volume_liters:.1f}"
+            Domoticz.Debug(f"Volume in liters: {formatted_sValue}L ({volume_liters/1000:.3f}m³)")
         else:
             # For all other devices, format numeric values with one decimal place
             if isinstance(sValue, (int, float)):

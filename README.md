@@ -123,6 +123,31 @@ For very low water levels (below the minimum pump level), the plugin will:
 - Log the total non-pumpable volume in Domoticz logs for reference
 - Include both values in diagnostic outputs
 
+## Domoticz Scripts
+
+The `domoticz_scripts/` directory contains dzVents automation scripts that work with this plugin:
+
+- **`script_device_deszczowka_automatyka.lua`** - Rainwater Tank Automation
+  - Automatically switches between rainwater and tap water based on fill level
+  - Auto-corrects device mismatches (e.g., after Domoticz restart)
+  - Supports manual override with auto mode toggle
+  - Prevents rapid switching with configurable intervals
+  - See [domoticz_scripts/README.md](domoticz_scripts/README.md) for complete installation guide
+
+### Automation Devices
+
+The plugin **creates only sensor devices** (Distance, Fill Level, Volume, etc.).
+
+For automation, you must **manually create Dummy devices** with HTTP actions support:
+- `RainTank - Woda szara` - Master selector switch (for visualization)
+- `RainTank - zawór woda szara` - Valve selector (with HTTP/GPIO control)
+- `RainTank - pompa woda deszczowa` - Pump switch (with HTTP/GPIO control)
+- `RainTank - Auto Mode Woda Szara` - Enable/disable automation
+
+**Why Dummy devices?** Plugin-created devices cannot have HTTP actions configured (needed for controlling physical valves/pumps via ESPEasy, Tasmota, GPIO, etc.). Dummy devices provide full HTTP URL configuration support.
+
+**Step-by-step guide:** See [domoticz_scripts/README.md](domoticz_scripts/README.md) for detailed instructions on creating these devices with HTTP actions.
+
 ## License
 
 This plugin is licensed under the Apache-2.0 License. See the LICENSE file for details.
