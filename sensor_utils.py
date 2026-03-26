@@ -37,7 +37,7 @@ class SensorData:
         """Unified logging for both Domoticz and standalone environments."""
         if self._domoticz is not None:
             {'debug': self._domoticz.Debug,
-             'warning': self._domoticz.Warning,
+             'warning': self._domoticz.Log,
              'error': self._domoticz.Error}.get(level, self._domoticz.Log)(msg)
         else:
             {'debug': self._fallback_logger.debug,
