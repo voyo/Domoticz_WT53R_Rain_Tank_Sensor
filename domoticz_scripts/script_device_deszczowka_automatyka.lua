@@ -113,7 +113,7 @@ return {
         local autoMode = domoticz.devices('RainTank - Auto Mode Woda Szara')
 
         local currentTime = os.time()
-        local currentLevel = fillLevel.percentage
+        local currentLevel = math.floor(fillLevel.percentage + 0.5)  -- round to int, %d format requires integer
 
         -- === LOG TRIGGER SOURCE ===
         if item.isTimer then
