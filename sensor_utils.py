@@ -49,15 +49,13 @@ class SensorData:
         if value is None:
             return
 
-        if value < 0 or value > 1000:
+        if value <= 0 or value > 1000:
             self._log('error', f"Rejecting impossible sensor reading: {value} cm")
             return
 
-        if self.data_points and len(self.data_points) >= 3:
+        if self.data_points:
             mean = statistics.mean(self.data_points)
-            stdev = statistics.stdev(self.data_points)
-            # Use a minimum stdev floor to avoid rejecting all new readings
-            # when the window is stable (stdev≈0 would reject anything non-identical)
+            stdev = statistics.stdev(self.data_points) if len(self.data_points) >= 3 else 0
             effective_stdev = max(stdev, self.MIN_STDEV_CM)
             if abs(value - mean) > 5 * self.outlier_threshold * effective_stdev:
                 self._log('warning', f"Rejecting extreme outlier: {value} cm (mean: {mean:.2f} cm, effective_stdev: {effective_stdev:.2f} cm)")

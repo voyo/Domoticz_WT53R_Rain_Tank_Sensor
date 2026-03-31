@@ -381,7 +381,7 @@ class BasePlugin:
 
                 # Process the raw distance value
                 raw_distance = registers[0]
-                distance_cm = float(raw_distance)  # sensor returns cm directly
+                distance_cm = float(raw_distance) / 10  # sensor returns mm, convert to cm
 
                 Domoticz.Debug(
                     f"Raw distance: {raw_distance}, Distance in cm: {distance_cm}"
