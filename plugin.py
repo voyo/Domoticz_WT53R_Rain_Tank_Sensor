@@ -46,6 +46,7 @@
   "min_pump_level": 8,
   "averaging_window": 15,
   "outlier_threshold": 2.0,
+  "min_distance": 50.0,
   "lock_file_path": "/var/tmp/domoticz_modbus.lock",
   "debug_logging": false
 }</pre>
@@ -143,6 +144,7 @@ class BasePlugin:
         self.min_pump_level = 8  # Minimum water level from bottom in cm (pump can't draw below this level)
         self.averaging_window = 15  # Number of readings to average (covers ~45 minutes of data at 3-minute intervals)
         self.outlier_threshold = 2.0  # Outlier threshold in standard deviations
+        self.min_distance = 50.0  # Minimum valid distance in cm (readings below this are physically impossible)
         self.lock_file_path = None  # Will be set based on config
         self.lock_timeout = 5  # Lock timeout in seconds
         self.debug_logging = False  # Enable debug logging
@@ -171,6 +173,7 @@ class BasePlugin:
         # Initialize sensor data handler
         self.sensor_data = SensorData(window_size=self.averaging_window,
                                       outlier_threshold=self.outlier_threshold,
+                                      min_distance=self.min_distance,
                                       logger=Domoticz)
 
         # Initialize Modbus lock
@@ -251,6 +254,8 @@ class BasePlugin:
                     config_json.get("averaging_window", 15))
                 self.outlier_threshold = float(
                     config_json.get("outlier_threshold", 2.0))
+                self.min_distance = float(
+                    config_json.get("min_distance", 50.0))
                 self.lock_file_path = config_json.get("lock_file_path", None)
                 self.lock_timeout = int(config_json.get("lock_timeout", 5))
                 self.debug_logging = bool(

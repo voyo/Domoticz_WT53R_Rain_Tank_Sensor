@@ -22,9 +22,10 @@ class SensorData:
     # any new reading that differs even slightly from the current window mean.
     MIN_STDEV_CM = 1.0
 
-    def __init__(self, window_size=10, outlier_threshold=2.0, logger=None):
+    def __init__(self, window_size=10, outlier_threshold=2.0, min_distance=50.0, logger=None):
         self.window_size = window_size
         self.outlier_threshold = outlier_threshold
+        self.min_distance = min_distance
         self.data_points = []
         try:
             import Domoticz
@@ -51,6 +52,10 @@ class SensorData:
 
         if value <= 0 or value > 1000:
             self._log('error', f"Rejecting impossible sensor reading: {value} cm")
+            return
+
+        if value < self.min_distance:
+            self._log('warning', f"Rejecting reading below min_distance: {value} cm (min: {self.min_distance} cm)")
             return
 
         if self.data_points:
