@@ -22,10 +22,11 @@ class SensorData:
     # any new reading that differs even slightly from the current window mean.
     MIN_STDEV_CM = 1.0
 
-    def __init__(self, window_size=10, outlier_threshold=2.0, min_distance=50.0, logger=None):
+    def __init__(self, window_size=10, outlier_threshold=2.0, min_distance=50.0, max_distance=200.0, logger=None):
         self.window_size = window_size
         self.outlier_threshold = outlier_threshold
         self.min_distance = min_distance
+        self.max_distance = max_distance
         self.data_points = []
         try:
             import Domoticz
@@ -46,17 +47,21 @@ class SensorData:
              'error': self._fallback_logger.error}.get(level, self._fallback_logger.info)(msg)
 
     def add_data_point(self, value):
-        """Add a new distance measurement to the data window."""
+        """Add a new distance measurement to the data window. Returns True if accepted."""
         if value is None:
-            return
+            return False
 
         if value <= 0 or value > 1000:
             self._log('error', f"Rejecting impossible sensor reading: {value} cm")
-            return
+            return False
 
         if value < self.min_distance:
             self._log('warning', f"Rejecting reading below min_distance: {value} cm (min: {self.min_distance} cm)")
-            return
+            return False
+
+        if value > self.max_distance:
+            self._log('warning', f"Rejecting reading above max_distance: {value} cm (max: {self.max_distance} cm)")
+            return False
 
         if self.data_points:
             mean = statistics.mean(self.data_points)
@@ -64,10 +69,11 @@ class SensorData:
             effective_stdev = max(stdev, self.MIN_STDEV_CM)
             if abs(value - mean) > 5 * self.outlier_threshold * effective_stdev:
                 self._log('warning', f"Rejecting extreme outlier: {value} cm (mean: {mean:.2f} cm, effective_stdev: {effective_stdev:.2f} cm)")
-                return
+                return False
 
         self.data_points.append(float(value))
         self.data_points = self.data_points[-self.window_size:]
+        return True
 
     def get_average(self):
         """
